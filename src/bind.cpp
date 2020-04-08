@@ -434,9 +434,8 @@ static std::unique_ptr<Expr> expand_patterns(const std::string &fnname, std::vec
     } else {
       argument = &prototype_token->location;
     }
-    std::unique_ptr<Destruct> des(
-      new Destruct(location, sum,
-        new VarRef(*argument, "_ a" + std::to_string(prototype_token->var))));
+    std::string arg = "_ a" + std::to_string(prototype_token->var);
+    std::unique_ptr<Destruct> des(new Destruct(location, sum, new VarRef(*argument, arg)));
     for (size_t c = 0; c < sum->members.size(); ++c) {
       Constructor &cons = sum->members[c];
       std::vector<PatternRef> bucket;
@@ -470,7 +469,10 @@ static std::unique_ptr<Expr> expand_patterns(const std::string &fnname, std::vec
       if (!rmap->body) return nullptr;
       for (size_t i = args; i > 0; --i) {
         auto out = rmap->defs.insert(std::make_pair("_ a" + std::to_string(--var),
-          DefValue(LOCATION, std::unique_ptr<Expr>(new Get(LOCATION, sum, &cons, i-1)))));
+          DefValue(LOCATION, std::unique_ptr<Expr>(
+            new App(LOCATION,
+              new Lambda(LOCATION, "_", new Get(LOCATION, sum, &cons, i-1)),
+              new VarRef(LOCATION, arg))))));
         assert (out.second);
       }
       Lambda *lam = new Lambda(rmap->body->location, "_", rmap.release());
