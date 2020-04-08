@@ -178,7 +178,14 @@ void RGet::pass_inline(PassInline &p, std::unique_ptr<Term> self) {
   Term *input = p.stream[args[0]];
   if (input->id() == typeid(RCon)) {
     RCon *con = static_cast<RCon*>(input);
-    p.stream.discard(con->args[index]);
+    // It is possible that an RGet is applied to an RCon of the wrong case
+    // This can happen in the not-taken branches of a destructor
+    // Since in that case, the code is unreachable, it does not matter what we do.
+    if (index >= con->args.size()) {
+      p.stream.transfer(std::move(self));
+    } else {
+      p.stream.discard(con->args[index]);
+    }
   } else {
     p.stream.transfer(std::move(self));
   }
